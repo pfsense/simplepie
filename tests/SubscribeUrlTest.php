@@ -41,62 +41,18 @@
  * @license http://www.opensource.org/licenses/bsd-license.php BSD License
  */
 
-/**
- * This is a dirty, dirty hack
- */
-class Exception_Success extends Exception {
-
-}
-
-class Mock_CacheLegacy extends SimplePie_Cache
+class SubscribeUrlTest extends PHPUnit\Framework\TestCase
 {
-	public static function get_handler($location, $filename, $extension)
-	{
-		trigger_error('Legacy cache class should not have get_handler() called');
-	}
-	public function create($location, $filename, $extension)
-	{
-		throw new Exception_Success('Correct function called');
-	}
-}
-
-class Mock_CacheNew extends SimplePie_Cache
-{
-	public static function get_handler($location, $filename, $extension)
-	{
-		throw new Exception_Success('Correct function called');
-	}
-	public function create($location, $filename, $extension)
-	{
-		trigger_error('New cache class should not have create() called');
-	}
-}
-
-class CacheTest extends PHPUnit\Framework\TestCase
-{
-	/**
-	 * @expectedException Exception_Success
-	 */
 	public function testDirectOverrideLegacy()
 	{
 		$feed = new SimplePie();
-		$feed->set_cache_class('Mock_CacheLegacy');
-		$feed->get_registry()->register('File', 'MockSimplePie_File');
+		$feed->get_registry()->register('File', MockSimplePie_RedirectingFile::class);
+		$feed->enable_cache(false);
 		$feed->set_feed_url('http://example.com/feed/');
 
 		$feed->init();
-	}
 
-	/**
-	 * @expectedException Exception_Success
-	 */
-	public function testDirectOverrideNew()
-	{
-		$feed = new SimplePie();
-		$feed->get_registry()->register('Cache', 'Mock_CacheNew');
-		$feed->get_registry()->register('File', 'MockSimplePie_File');
-		$feed->set_feed_url('http://example.com/feed/');
-
-		$feed->init();
+		$this->assertEquals('https://example.com/feed/2019-10-07', $feed->subscribe_url());
+		$this->assertEquals('https://example.com/feed/', $feed->subscribe_url(true));
 	}
 }
